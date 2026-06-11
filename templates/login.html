@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン</title>
+</head>
+<body>
+    <h1>モルックスコア計算アプリ</h1>
+
+    <form method="POST">
+        <label>パスワード</label>
+        <input type="password" name="password">
+        <button type="submit">ログイン</button>
+    </form>
+
+    {% if error_message %}
+        <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+</body>
+</html>
