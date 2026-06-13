@@ -69,11 +69,17 @@
             </div>
 
             <div class="card">
-                <form action="{{ url_for('submit_score') }}" method="POST">
-                    <label>獲得点</label>
-                    <input type="number" name="point" min="0" max="12">
-                    <button class="primary-button" type="submit">送信</button>
-                </form>
+                <h2>獲得点を選択</h2>
+
+                <div class="score-buttons">
+                    {% for point in range(0, 13) %}
+                        <form action="{{ url_for('submit_score') }}" method="POST">
+                            <button class="score-button" type="submit" name="point" value="{{ point }}">
+                                {{ point }}
+                            </button>
+                        </form>
+                    {% endfor %}
+                </div>
             </div>
 
             <form action="{{ url_for('end_game') }}" method="POST">

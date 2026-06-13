@@ -96,3 +96,23 @@ button {
     text-align: center;
     margin-top: 24px;
 }
+
+.score-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.score-buttons form {
+    margin: 0;
+}
+
+.score-button {
+    font-size: 24px;
+    font-weight: bold;
+    height: 64px;
+    background-color: #222;
+    color: white;
+    border-radius: 12px;
+    margin: 0;
+}

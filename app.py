@@ -166,7 +166,7 @@ def submit_score():
         move_to_next_player()
         return redirect(url_for("index"))
 
-    point_text = request.form.get("point").strip()
+    point_text = request.form.get("point", "").strip()
 
     try:
         point = int(point_text)
