@@ -58,6 +58,15 @@
                                 <div class="player-sub">
                                     連続0点：{{ player.miss_count }}回
                                 </div>
+
+                                <div class="player-sub last-point">
+                                    前回獲得：
+                                    {% if player.get("last_point") is not none %}
+                                        {{ player.last_point }}点
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <div class="player-score">

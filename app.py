@@ -37,6 +37,7 @@ def reset_game_status():
         player["score"] = 0
         player["miss_count"] = 0
         player["is_lost"] = False
+        player["last_point"] = None
 
 
 def save_history():
@@ -84,6 +85,8 @@ def get_ranking():
 
 
 def update_score(player, point):
+    player["last_point"] = point
+
     if point == 0:
         player["miss_count"] += 1
     else:
@@ -169,7 +172,8 @@ def add_player():
             "name": name,
             "score": 0,
             "miss_count": 0,
-            "is_lost": False
+            "is_lost": False,
+            "last_point": None
         })
 
     return redirect(url_for("index"))
