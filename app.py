@@ -1,9 +1,19 @@
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 
-app = Flask(__name__)
-app.secret_key = "temporary-secret-key"
+load_dotenv()
 
-APP_PASSWORD = "molkky"
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY")
+
+APP_PASSWORD = os.environ.get("APP_PASSWORD")
+
+if not app.secret_key:
+    raise RuntimeError("SECRET_KEYが設定されていません。")
+
+if not APP_PASSWORD:
+    raise RuntimeError("APP_PASSWORDが設定されていません。")
 
 players = []
 current_player_index = 0
