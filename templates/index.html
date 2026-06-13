@@ -2,76 +2,94 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>モルックスコア計算アプリ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>モルックスコア計算アプリ</h1>
+    <div class="container">
+        <h1>モルックスコア計算アプリ</h1>
 
-    {% if winner_message %}
-        <h2>{{ winner_message }}</h2>
-    {% endif %}
+        {% if winner_message %}
+            <div class="message">
+                {{ winner_message }}
+            </div>
+        {% endif %}
 
-    {% if not game_started %}
-        <h2>プレイヤー登録</h2>
+        {% if not game_started %}
+            <div class="card">
+                <h2>プレイヤー登録</h2>
 
-        <form action="{{ url_for('add_player') }}" method="POST">
-            <label>プレイヤー名</label>
-            <input type="text" name="player_name">
-            <button type="submit">追加</button>
-        </form>
-    {% endif %}
+                <form action="{{ url_for('add_player') }}" method="POST">
+                    <label>プレイヤー名</label>
+                    <input type="text" name="player_name">
+                    <button class="primary-button" type="submit">追加</button>
+                </form>
+            </div>
+        {% endif %}
 
-    <h2>登録済みプレイヤー</h2>
+        <h2>スコア一覧</h2>
 
-    {% if players %}
-        <ul>
+        {% if players %}
             {% for player in players %}
-                <li>
-                    {{ player.name }}：
-                    {{ player.score }}点
-                    連続0点 {{ player.miss_count }}回
+                <div class="card">
+                    <div class="score">
+                        {{ player.name }}：{{ player.score }}点
+                    </div>
+
+                    <div>
+                        連続0点：{{ player.miss_count }}回
+                    </div>
+
                     {% if player.is_lost %}
-                        失格
+                        <div class="lost">失格</div>
                     {% endif %}
-                </li>
+                </div>
             {% endfor %}
-        </ul>
-    {% else %}
-        <p>まだプレイヤーは登録されていません。</p>
-    {% endif %}
+        {% else %}
+            <div class="card">
+                まだプレイヤーは登録されていません。
+            </div>
+        {% endif %}
 
-    {% if not game_started %}
-        <form action="{{ url_for('start_game') }}" method="POST">
-            <button type="submit">試合開始</button>
-        </form>
+        {% if not game_started %}
+            <form action="{{ url_for('start_game') }}" method="POST">
+                <button class="primary-button" type="submit">試合開始</button>
+            </form>
 
-        <form action="{{ url_for('reset_players') }}" method="POST">
-            <button type="submit">プレイヤーリセット</button>
-        </form>
-    {% endif %}
+            <form action="{{ url_for('reset_players') }}" method="POST">
+                <button class="sub-button" type="submit">プレイヤーリセット</button>
+            </form>
+        {% endif %}
 
-    {% if game_started and current_player and not winner_message %}
-        <h2>現在のプレイヤー：{{ current_player.name }}</h2>
+        {% if game_started and current_player and not winner_message %}
+            <div class="current-player">
+                現在のプレイヤー<br>
+                {{ current_player.name }}
+            </div>
 
-        <form action="{{ url_for('submit_score') }}" method="POST">
-            <label>獲得点</label>
-            <input type="number" name="point" min="0" max="12">
-            <button type="submit">送信</button>
-        </form>
+            <div class="card">
+                <form action="{{ url_for('submit_score') }}" method="POST">
+                    <label>獲得点</label>
+                    <input type="number" name="point" min="0" max="12">
+                    <button class="primary-button" type="submit">送信</button>
+                </form>
+            </div>
 
-        <form action="{{ url_for('end_game') }}" method="POST">
-            <button type="submit">試合終了</button>
-        </form>
-    {% endif %}
+            <form action="{{ url_for('end_game') }}" method="POST">
+                <button class="danger-button" type="submit">試合終了</button>
+            </form>
+        {% endif %}
 
-    {% if winner_message %}
-        <form action="{{ url_for('end_game') }}" method="POST">
-            <button type="submit">試合終了</button>
-        </form>
-    {% endif %}
+        {% if winner_message %}
+            <form action="{{ url_for('end_game') }}" method="POST">
+                <button class="primary-button" type="submit">試合終了</button>
+            </form>
+        {% endif %}
 
-    <p>
-        <a href="{{ url_for('logout') }}">ログアウト</a>
-    </p>
+        <div class="link-area">
+            <a href="{{ url_for('logout') }}">ログアウト</a>
+        </div>
+    </div>
 </body>
 </html>

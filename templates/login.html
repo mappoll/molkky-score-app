@@ -2,19 +2,25 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ログイン</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>モルックスコア計算アプリ</h1>
+    <div class="container">
+        <h1>モルックスコア計算アプリ</h1>
 
-    <form method="POST">
-        <label>パスワード</label>
-        <input type="password" name="password">
-        <button type="submit">ログイン</button>
-    </form>
+        <div class="card">
+            <form method="POST">
+                <label>パスワード</label>
+                <input type="password" name="password">
+                <button class="primary-button" type="submit">ログイン</button>
+            </form>
 
-    {% if error_message %}
-        <p style="color: red;">{{ error_message }}</p>
-    {% endif %}
+            {% if error_message %}
+                <p class="lost">{{ error_message }}</p>
+            {% endif %}
+        </div>
+    </div>
 </body>
 </html>
