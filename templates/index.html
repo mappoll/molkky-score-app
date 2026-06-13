@@ -52,6 +52,22 @@
             </div>
         {% endif %}
 
+        {% if winner_message and ranking %}
+            <h2>順位</h2>
+
+            {% for player in ranking %}
+                <div class="card">
+                    <div class="score">
+                        {{ loop.index }}位：{{ player.name }}：{{ player.score }}点
+                    </div>
+
+                    {% if player.is_lost %}
+                        <div class="lost">失格</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         {% if not game_started %}
             <form action="{{ url_for('start_game') }}" method="POST">
                 <button class="primary-button" type="submit">試合開始</button>
@@ -81,7 +97,15 @@
                     {% endfor %}
                 </div>
             </div>
+        {% endif %}
 
+        {% if game_started and can_undo %}
+            <form action="{{ url_for('undo_score') }}" method="POST">
+                <button class="sub-button" type="submit">直前の入力を取り消す</button>
+            </form>
+        {% endif %}
+
+        {% if game_started and not winner_message %}
             <form action="{{ url_for('end_game') }}" method="POST">
                 <button class="danger-button" type="submit">試合終了</button>
             </form>

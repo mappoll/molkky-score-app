@@ -1,4 +1,6 @@
+import copy
 import os
+import random
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 
@@ -15,10 +17,12 @@ if not app.secret_key:
 if not APP_PASSWORD:
     raise RuntimeError("APP_PASSWORDが設定されていません。")
 
+
 players = []
 current_player_index = 0
 game_started = False
 winner_message = ""
+game_history = []
 
 
 def reset_game_status():
@@ -27,11 +31,39 @@ def reset_game_status():
     current_player_index = 0
     game_started = False
     winner_message = ""
+    game_history.clear()
 
     for player in players:
         player["score"] = 0
         player["miss_count"] = 0
         player["is_lost"] = False
+
+
+def save_history():
+    game_history.append({
+        "players": copy.deepcopy(players),
+        "current_player_index": current_player_index,
+        "game_started": game_started,
+        "winner_message": winner_message
+    })
+
+
+def restore_last_history():
+    global current_player_index, game_started, winner_message
+
+    if len(game_history) == 0:
+        return False
+
+    snapshot = game_history.pop()
+
+    players.clear()
+    players.extend(snapshot["players"])
+
+    current_player_index = snapshot["current_player_index"]
+    game_started = snapshot["game_started"]
+    winner_message = snapshot["winner_message"]
+
+    return True
 
 
 def get_active_players():
@@ -42,6 +74,13 @@ def get_active_players():
             active_players.append(player)
 
     return active_players
+
+
+def get_ranking():
+    return sorted(
+        players,
+        key=lambda player: (player["is_lost"], -player["score"], player["miss_count"])
+    )
 
 
 def update_score(player, point):
@@ -79,16 +118,22 @@ def index():
         return redirect(url_for("login"))
 
     current_player = None
+    ranking = []
 
     if game_started and len(players) > 0 and not winner_message:
         current_player = players[current_player_index]
+
+    if winner_message:
+        ranking = get_ranking()
 
     return render_template(
         "index.html",
         players=players,
         game_started=game_started,
         current_player=current_player,
-        winner_message=winner_message
+        winner_message=winner_message,
+        ranking=ranking,
+        can_undo=len(game_history) > 0
     )
 
 
@@ -116,7 +161,7 @@ def add_player():
     if game_started:
         return redirect(url_for("index"))
 
-    name = request.form.get("player_name").strip()
+    name = (request.form.get("player_name") or "").strip()
 
     if name != "":
         players.append({
@@ -137,6 +182,7 @@ def reset_players():
         return redirect(url_for("login"))
 
     players.clear()
+    game_history.clear()
     current_player_index = 0
     game_started = False
     winner_message = ""
@@ -154,6 +200,7 @@ def start_game():
     if len(players) < 2:
         return redirect(url_for("index"))
 
+    random.shuffle(players)
     reset_game_status()
     game_started = True
 
@@ -186,6 +233,8 @@ def submit_score():
     if point < 0 or point > 12:
         return redirect(url_for("index"))
 
+    save_history()
+
     update_score(current_player, point)
 
     if current_player["is_lost"]:
@@ -207,6 +256,16 @@ def submit_score():
     return redirect(url_for("index"))
 
 
+@app.route("/undo_score", methods=["POST"])
+def undo_score():
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    restore_last_history()
+
+    return redirect(url_for("index"))
+
+
 @app.route("/end_game", methods=["POST"])
 def end_game():
     global game_started, winner_message
@@ -216,6 +275,7 @@ def end_game():
 
     game_started = False
     winner_message = ""
+    game_history.clear()
 
     return redirect(url_for("index"))
 
