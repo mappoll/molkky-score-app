@@ -33,58 +33,69 @@
 
         <section>
             <h2>スコア一覧</h2>
-
-            {% if players %}
-                {% for player in players %}
-
-                    <div class="card score-card
-                        {% if game_started and current_player_index == loop.index0 and not winner_message %}
-                            active-card
-                        {% endif %}
-                        {% if player.is_lost %}
-                            lost-card
-                        {% endif %}
-                    ">
-                        {% if game_started and current_player_index == loop.index0 and not winner_message %}
-                            <div class="current-badge">現在のプレイヤー</div>
-                        {% endif %}
-
-                        <div class="player-row">
-                            <div>
-                                <div class="player-name">
+                
+                {% if players %}
+                    {% for player in players %}
+                        {% if not game_started %}
+                            <div class="card pre-game-player-card">
+                                <div class="pre-game-player-name">
                                     {{ player.name }}
                                 </div>
 
-                                <div class="player-sub">
-                                    連続0点：{{ player.miss_count }}回
+                                <form class="delete-player-form" action="{{ url_for('delete_player', player_index=loop.index0) }}" method="POST" onsubmit="return confirm('このプレイヤーを削除しますか？');">
+                                    <button class="delete-player-button" type="submit">削除</button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <div class="card score-card
+                                {% if current_player_index == loop.index0 and not winner_message %}
+                                    active-card
+                                {% endif %}
+                                {% if player.is_lost %}
+                                    lost-card
+                                {% endif %}
+                            ">
+                                {% if current_player_index == loop.index0 and not winner_message %}
+                                    <div class="current-badge">現在のプレイヤー</div>
+                                {% endif %}
+
+                                <div class="player-row">
+                                    <div>
+                                        <div class="player-name">
+                                            {{ player.name }}
+                                        </div>
+
+                                        <div class="player-sub">
+                                            連続0点：{{ player.miss_count }}回
+                                        </div>
+
+                                        <div class="player-sub last-point">
+                                            前回獲得：
+                                            {% if player.get("last_point") is not none %}
+                                                {{ player.last_point }}点
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="player-score">
+                                        {{ player.score }}点
+                                    </div>
                                 </div>
 
-                                <div class="player-sub last-point">
-                                    前回獲得：
-                                    {% if player.get("last_point") is not none %}
-                                        {{ player.last_point }}点
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </div>
+                                {% if player.is_lost %}
+                                    <div class="lost">失格</div>
+                                {% endif %}
                             </div>
-
-                            <div class="player-score">
-                                {{ player.score }}点
-                            </div>
-                        </div>
-
-                        {% if player.is_lost %}
-                            <div class="lost">失格</div>
                         {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="card">
+                        まだプレイヤーは登録されていません。
                     </div>
-
-                {% endfor %}
-            {% else %}
-                <div class="card">
-                    まだプレイヤーは登録されていません。
-                </div>
-            {% endif %}
+                {% endif %}
+            
         </section>
 
         {% if winner_message and ranking %}

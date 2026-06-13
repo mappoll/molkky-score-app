@@ -194,6 +194,23 @@ def reset_players():
 
     return redirect(url_for("index"))
 
+@app.route("/delete_player/<int:player_index>", methods=["POST"])
+def delete_player(player_index):
+    global current_player_index
+
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    if game_started:
+        return redirect(url_for("index"))
+
+    if 0 <= player_index < len(players):
+        players.pop(player_index)
+        current_player_index = 0
+        game_history.clear()
+
+    return redirect(url_for("index"))
+
 
 @app.route("/start_game", methods=["POST"])
 def start_game():
