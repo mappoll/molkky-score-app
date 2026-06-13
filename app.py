@@ -131,6 +131,7 @@ def index():
         players=players,
         game_started=game_started,
         current_player=current_player,
+        current_player_index=current_player_index,
         winner_message=winner_message,
         ranking=ranking,
         can_undo=len(game_history) > 0

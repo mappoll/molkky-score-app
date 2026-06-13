@@ -1,7 +1,7 @@
 body {
     font-family: sans-serif;
     margin: 0;
-    background-color: #f5f5f5;
+    background-color: #f3f4f6;
     color: #222;
 }
 
@@ -11,41 +11,97 @@ body {
     padding: 16px;
 }
 
+.app-header {
+    margin-bottom: 20px;
+}
+
 h1 {
-    font-size: 28px;
+    font-size: 24px;
     text-align: center;
-    margin-bottom: 24px;
+    margin: 10px 0 16px;
 }
 
 h2 {
-    font-size: 22px;
-    margin-top: 24px;
+    font-size: 20px;
+    margin: 18px 0 10px;
 }
 
 .card {
     background-color: white;
-    padding: 16px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    padding: 14px;
+    margin-bottom: 10px;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.current-player {
-    background-color: white;
-    padding: 20px;
-    margin: 20px 0;
-    border-radius: 12px;
-    text-align: center;
-    font-size: 24px;
+.score-card {
+    border: 2px solid transparent;
+}
+
+.active-card {
+    border: 2px solid #222;
+    background-color: #fff8dc;
+}
+
+.lost-card {
+    opacity: 0.65;
+}
+
+.player-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.player-name {
+    font-size: 22px;
     font-weight: bold;
+}
+
+.player-sub {
+    font-size: 14px;
+    color: #555;
+    margin-top: 4px;
+}
+
+.player-score {
+    font-size: 28px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.lost {
+    color: #b00020;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.message {
+    background-color: #fff3cd;
+    border: 2px solid #f0c36d;
+    padding: 18px;
+    border-radius: 14px;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.message-title {
+    font-size: 15px;
+    margin-bottom: 6px;
+    color: #765100;
 }
 
 input {
     font-size: 20px;
-    padding: 12px;
+    padding: 14px;
     width: 100%;
     box-sizing: border-box;
     margin: 8px 0 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
 }
 
 button {
@@ -53,7 +109,7 @@ button {
     padding: 14px;
     width: 100%;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 12px;
     cursor: pointer;
 }
@@ -61,40 +117,28 @@ button {
 .primary-button {
     background-color: #222;
     color: white;
+    font-weight: bold;
+}
+
+.sub-button {
+    background-color: #e5e7eb;
+    color: #222;
 }
 
 .danger-button {
     background-color: #b00020;
     color: white;
-}
-
-.sub-button {
-    background-color: #ddd;
-    color: #222;
-}
-
-.score {
-    font-size: 24px;
     font-weight: bold;
 }
 
-.lost {
-    color: #b00020;
+.zero-button {
+    height: 72px;
+    font-size: 30px;
     font-weight: bold;
-}
-
-.message {
-    background-color: #fff3cd;
-    padding: 16px;
-    border-radius: 12px;
-    font-size: 22px;
-    font-weight: bold;
-    text-align: center;
-}
-
-.link-area {
-    text-align: center;
-    margin-top: 24px;
+    background-color: #b00020;
+    color: white;
+    border-radius: 14px;
+    margin-bottom: 12px;
 }
 
 .score-buttons {
@@ -115,4 +159,60 @@ button {
     color: white;
     border-radius: 12px;
     margin: 0;
+}
+
+.ranking-card {
+    background-color: #ffffff;
+}
+
+.ranking-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.rank-mark {
+    width: 56px;
+    font-size: 28px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.ranking-main {
+    flex: 1;
+}
+
+.action-area {
+    margin-top: 18px;
+}
+
+.danger-area {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid #ddd;
+}
+
+.link-area {
+    text-align: center;
+    margin: 24px 0 12px;
+}
+
+a {
+    color: #333;
+}
+
+.current-badge {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    background-color: #222;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+}
+
+.active-card {
+    border: 2px solid #222;
+    background-color: #fff8dc;
 }

@@ -8,87 +8,130 @@
 </head>
 <body>
     <div class="container">
-        <h1>モルックスコア計算アプリ</h1>
+        <header class="app-header">
+            <h1>モルックスコア計算アプリ</h1>
+        </header>
 
         {% if winner_message %}
             <div class="message">
-                {{ winner_message }}
+                <div class="message-title">試合終了</div>
+                <div>{{ winner_message }}</div>
             </div>
         {% endif %}
 
         {% if not game_started %}
-            <div class="card">
+            <section class="card">
                 <h2>プレイヤー登録</h2>
 
                 <form action="{{ url_for('add_player') }}" method="POST">
                     <label>プレイヤー名</label>
-                    <input type="text" name="player_name">
+                    <input type="text" name="player_name" placeholder="例：かずま">
                     <button class="primary-button" type="submit">追加</button>
                 </form>
-            </div>
+            </section>
         {% endif %}
 
-        <h2>スコア一覧</h2>
+        <section>
+            <h2>スコア一覧</h2>
 
-        {% if players %}
-            {% for player in players %}
+            {% if players %}
+                {% for player in players %}
+
+                    <div class="card score-card
+                        {% if game_started and current_player_index == loop.index0 and not winner_message %}
+                            active-card
+                        {% endif %}
+                        {% if player.is_lost %}
+                            lost-card
+                        {% endif %}
+                    ">
+                        {% if game_started and current_player_index == loop.index0 and not winner_message %}
+                            <div class="current-badge">現在のプレイヤー</div>
+                        {% endif %}
+
+                        <div class="player-row">
+                            <div>
+                                <div class="player-name">
+                                    {{ player.name }}
+                                </div>
+
+                                <div class="player-sub">
+                                    連続0点：{{ player.miss_count }}回
+                                </div>
+                            </div>
+
+                            <div class="player-score">
+                                {{ player.score }}点
+                            </div>
+                        </div>
+
+                        {% if player.is_lost %}
+                            <div class="lost">失格</div>
+                        {% endif %}
+                    </div>
+
+                {% endfor %}
+            {% else %}
                 <div class="card">
-                    <div class="score">
-                        {{ player.name }}：{{ player.score }}点
-                    </div>
-
-                    <div>
-                        連続0点：{{ player.miss_count }}回
-                    </div>
-
-                    {% if player.is_lost %}
-                        <div class="lost">失格</div>
-                    {% endif %}
+                    まだプレイヤーは登録されていません。
                 </div>
-            {% endfor %}
-        {% else %}
-            <div class="card">
-                まだプレイヤーは登録されていません。
-            </div>
-        {% endif %}
+            {% endif %}
+        </section>
 
         {% if winner_message and ranking %}
-            <h2>順位</h2>
+            <section>
+                <h2>順位</h2>
 
-            {% for player in ranking %}
-                <div class="card">
-                    <div class="score">
-                        {{ loop.index }}位：{{ player.name }}：{{ player.score }}点
+                {% for player in ranking %}
+                    <div class="card ranking-card">
+                        <div class="ranking-row">
+                            <div class="rank-mark">
+                                {% if loop.index == 1 %}
+                                    🏆
+                                {% elif loop.index == 2 %}
+                                    🥈
+                                {% elif loop.index == 3 %}
+                                    🥉
+                                {% else %}
+                                    {{ loop.index }}位
+                                {% endif %}
+                            </div>
+
+                            <div class="ranking-main">
+                                <div class="player-name">{{ player.name }}</div>
+                                <div class="player-sub">
+                                    {{ player.score }}点
+                                    {% if player.is_lost %}
+                                        ／ 失格
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-                    {% if player.is_lost %}
-                        <div class="lost">失格</div>
-                    {% endif %}
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </section>
         {% endif %}
 
         {% if not game_started %}
-            <form action="{{ url_for('start_game') }}" method="POST">
-                <button class="primary-button" type="submit">試合開始</button>
-            </form>
-
-            <form action="{{ url_for('reset_players') }}" method="POST">
-                <button class="sub-button" type="submit">プレイヤーリセット</button>
-            </form>
+            <section class="action-area">
+                <form action="{{ url_for('start_game') }}" method="POST">
+                    <button class="primary-button" type="submit">試合開始</button>
+                </form>
+            </section>
         {% endif %}
 
         {% if game_started and current_player and not winner_message %}
-            <div class="current-player">
-                現在のプレイヤー<br>
-                {{ current_player.name }}
-            </div>
-
-            <div class="card">
+            <section class="card">
                 <h2>獲得点を選択</h2>
 
+                <form action="{{ url_for('submit_score') }}" method="POST">
+                    <button class="zero-button" type="submit" name="point" value="0">
+                        0点
+                    </button>
+                </form>
+
                 <div class="score-buttons">
-                    {% for point in range(0, 13) %}
+                    {% for point in range(1, 13) %}
                         <form action="{{ url_for('submit_score') }}" method="POST">
                             <button class="score-button" type="submit" name="point" value="{{ point }}">
                                 {{ point }}
@@ -96,7 +139,7 @@
                         </form>
                     {% endfor %}
                 </div>
-            </div>
+            </section>
         {% endif %}
 
         {% if game_started and can_undo %}
@@ -105,17 +148,25 @@
             </form>
         {% endif %}
 
-        {% if game_started and not winner_message %}
-            <form action="{{ url_for('end_game') }}" method="POST">
-                <button class="danger-button" type="submit">試合終了</button>
-            </form>
-        {% endif %}
-
         {% if winner_message %}
             <form action="{{ url_for('end_game') }}" method="POST">
                 <button class="primary-button" type="submit">試合終了</button>
             </form>
         {% endif %}
+
+        <section class="danger-area">
+            {% if not game_started %}
+                <form action="{{ url_for('reset_players') }}" method="POST">
+                    <button class="sub-button" type="submit">プレイヤーリセット</button>
+                </form>
+            {% endif %}
+
+            {% if game_started and not winner_message %}
+                <form action="{{ url_for('end_game') }}" method="POST">
+                    <button class="danger-button" type="submit">試合終了</button>
+                </form>
+            {% endif %}
+        </section>
 
         <div class="link-area">
             <a href="{{ url_for('logout') }}">ログアウト</a>
