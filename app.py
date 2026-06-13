@@ -2,7 +2,7 @@ import copy
 import os
 import random
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 
 load_dotenv()
 
@@ -220,6 +220,7 @@ def start_game():
         return redirect(url_for("login"))
 
     if len(players) < 2:
+        flash("プレイヤーは2名以上登録してください。")
         return redirect(url_for("index"))
 
     random.shuffle(players)
