@@ -1,8 +1,12 @@
 import copy
 import os
 import random
+
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, flash, redirect, render_template, request, session, url_for
+
+from db import create_game, delete_game, get_game, save_game
+
 
 load_dotenv()
 
@@ -18,69 +22,81 @@ if not APP_PASSWORD:
     raise RuntimeError("APP_PASSWORDが設定されていません。")
 
 
-players = []
-current_player_index = 0
-game_started = False
-winner_message = ""
-game_history = []
+def create_player(name):
+    return {
+        "name": name,
+        "score": 0,
+        "miss_count": 0,
+        "is_lost": False,
+        "last_point": None
+    }
 
 
-def reset_game_status():
-    global current_player_index, game_started, winner_message
+def create_initial_state(player_names=None):
+    players = []
 
-    current_player_index = 0
-    game_started = False
-    winner_message = ""
-    game_history.clear()
+    if player_names:
+        for name in player_names:
+            players.append(create_player(name))
 
-    for player in players:
+    return {
+        "players": players,
+        "current_player_index": 0,
+        "game_started": False,
+        "winner_message": ""
+    }
+
+
+def get_current_game():
+    game_id = session.get("game_id")
+
+    if game_id:
+        game = get_game(game_id)
+
+        if game is not None:
+            return game
+
+    game_id = create_game()
+    session["game_id"] = game_id
+
+    game = get_game(game_id)
+
+    if game is None:
+        raise RuntimeError("作成したゲームを読み込めませんでした。")
+
+    return game
+
+
+def reset_game_status(state):
+    state["current_player_index"] = 0
+    state["game_started"] = False
+    state["winner_message"] = ""
+
+    for player in state["players"]:
         player["score"] = 0
         player["miss_count"] = 0
         player["is_lost"] = False
         player["last_point"] = None
 
 
-def save_history():
-    game_history.append({
-        "players": copy.deepcopy(players),
-        "current_player_index": current_player_index,
-        "game_started": game_started,
-        "winner_message": winner_message
-    })
-
-
-def restore_last_history():
-    global current_player_index, game_started, winner_message
-
-    if len(game_history) == 0:
-        return False
-
-    snapshot = game_history.pop()
-
-    players.clear()
-    players.extend(snapshot["players"])
-
-    current_player_index = snapshot["current_player_index"]
-    game_started = snapshot["game_started"]
-    winner_message = snapshot["winner_message"]
-
-    return True
-
-
-def get_active_players():
+def get_active_players(state):
     active_players = []
 
-    for player in players:
+    for player in state["players"]:
         if not player["is_lost"]:
             active_players.append(player)
 
     return active_players
 
 
-def get_ranking():
+def get_ranking(state):
     return sorted(
-        players,
-        key=lambda player: (player["is_lost"], -player["score"], player["miss_count"])
+        state["players"],
+        key=lambda player: (
+            player["is_lost"],
+            -player["score"],
+            player["miss_count"]
+        )
     )
 
 
@@ -106,13 +122,15 @@ def check_winner(player):
     return player["score"] == 50
 
 
-def move_to_next_player():
-    global current_player_index
+def move_to_next_player(state):
+    players = state["players"]
 
     if len(players) == 0:
         return
 
-    current_player_index = (current_player_index + 1) % len(players)
+    state["current_player_index"] = (
+        state["current_player_index"] + 1
+    ) % len(players)
 
 
 @app.route("/")
@@ -120,14 +138,31 @@ def index():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
+    game = get_current_game()
+    state = game["state"]
+
+    players = state["players"]
+    game_started = state["game_started"]
+    winner_message = state["winner_message"]
+    current_player_index = state["current_player_index"]
+
     current_player = None
     ranking = []
 
-    if game_started and len(players) > 0 and not winner_message:
+    if game_started and players and not winner_message:
+        if current_player_index >= len(players):
+            current_player_index = 0
+            state["current_player_index"] = 0
+            save_game(
+                game["id"],
+                state,
+                game["last_snapshot"]
+            )
+
         current_player = players[current_player_index]
 
     if winner_message:
-        ranking = get_ranking()
+        ranking = get_ranking(state)
 
     return render_template(
         "index.html",
@@ -137,7 +172,7 @@ def index():
         current_player_index=current_player_index,
         winner_message=winner_message,
         ranking=ranking,
-        can_undo=len(game_history) > 0
+        can_undo=game["last_snapshot"] is not None
     )
 
 
@@ -151,10 +186,13 @@ def login():
         if password == APP_PASSWORD:
             session["logged_in"] = True
             return redirect(url_for("index"))
-        else:
-            error_message = "パスワードが違います。"
 
-    return render_template("login.html", error_message=error_message)
+        error_message = "パスワードが違います。"
+
+    return render_template(
+        "login.html",
+        error_message=error_message
+    )
 
 
 @app.route("/add_player", methods=["POST"])
@@ -162,88 +200,120 @@ def add_player():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    if game_started:
+    game = get_current_game()
+    state = game["state"]
+
+    if state["game_started"]:
         return redirect(url_for("index"))
 
     name = (request.form.get("player_name") or "").strip()
 
-    if name != "":
-        players.append({
-            "name": name,
-            "score": 0,
-            "miss_count": 0,
-            "is_lost": False,
-            "last_point": None
-        })
+    if name:
+        state["players"].append(create_player(name))
+
+        save_game(
+            game["id"],
+            state,
+            None
+        )
+
+    return redirect(url_for("index"))
+
+
+@app.route(
+    "/delete_player/<int:player_index>",
+    methods=["POST"]
+)
+def delete_player(player_index):
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+    game = get_current_game()
+    state = game["state"]
+
+    if state["game_started"]:
+        return redirect(url_for("index"))
+
+    players = state["players"]
+
+    if 0 <= player_index < len(players):
+        players.pop(player_index)
+        state["current_player_index"] = 0
+
+        save_game(
+            game["id"],
+            state,
+            None
+        )
 
     return redirect(url_for("index"))
 
 
 @app.route("/reset_players", methods=["POST"])
 def reset_players():
-    global current_player_index, game_started, winner_message
-
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    players.clear()
-    game_history.clear()
-    current_player_index = 0
-    game_started = False
-    winner_message = ""
+    game = get_current_game()
+    state = create_initial_state()
 
-    return redirect(url_for("index"))
-
-@app.route("/delete_player/<int:player_index>", methods=["POST"])
-def delete_player(player_index):
-    global current_player_index
-
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-    if game_started:
-        return redirect(url_for("index"))
-
-    if 0 <= player_index < len(players):
-        players.pop(player_index)
-        current_player_index = 0
-        game_history.clear()
+    save_game(
+        game["id"],
+        state,
+        None
+    )
 
     return redirect(url_for("index"))
 
 
 @app.route("/start_game", methods=["POST"])
 def start_game():
-    global game_started
-
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    if len(players) < 2:
+    game = get_current_game()
+    state = game["state"]
+
+    if len(state["players"]) < 2:
         flash("プレイヤーは2名以上登録してください。")
         return redirect(url_for("index"))
 
-    random.shuffle(players)
-    reset_game_status()
-    game_started = True
+    reset_game_status(state)
+    random.shuffle(state["players"])
+    state["game_started"] = True
+
+    save_game(
+        game["id"],
+        state,
+        None
+    )
 
     return redirect(url_for("index"))
 
 
 @app.route("/submit_score", methods=["POST"])
 def submit_score():
-    global winner_message
-
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    if not game_started or winner_message:
+    game = get_current_game()
+    state = game["state"]
+
+    if (
+        not state["game_started"]
+        or state["winner_message"]
+    ):
         return redirect(url_for("index"))
 
+    players = state["players"]
+
+    if not players:
+        return redirect(url_for("index"))
+
+    current_player_index = state["current_player_index"]
     current_player = players[current_player_index]
 
     if current_player["is_lost"]:
-        move_to_next_player()
         return redirect(url_for("index"))
 
     point_text = request.form.get("point", "").strip()
@@ -256,25 +326,34 @@ def submit_score():
     if point < 0 or point > 12:
         return redirect(url_for("index"))
 
-    save_history()
+    last_snapshot = copy.deepcopy(state)
 
     update_score(current_player, point)
 
     if current_player["is_lost"]:
-        active_players = get_active_players()
+        active_players = get_active_players(state)
 
         if len(active_players) == 1:
-            winner_message = f'{active_players[0]["name"]}さんの勝利です！'
-            return redirect(url_for("index"))
+            state["winner_message"] = (
+                f'{active_players[0]["name"]}さんの勝利です！'
+            )
 
     elif check_winner(current_player):
-        winner_message = f'{current_player["name"]}さんの勝利です！'
-        return redirect(url_for("index"))
+        state["winner_message"] = (
+            f'{current_player["name"]}さんの勝利です！'
+        )
 
-    move_to_next_player()
+    if not state["winner_message"]:
+        move_to_next_player(state)
 
-    while players[current_player_index]["is_lost"]:
-        move_to_next_player()
+        while players[state["current_player_index"]]["is_lost"]:
+            move_to_next_player(state)
+
+    save_game(
+        game["id"],
+        state,
+        last_snapshot
+    )
 
     return redirect(url_for("index"))
 
@@ -284,28 +363,59 @@ def undo_score():
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    restore_last_history()
+    game = get_current_game()
+    last_snapshot = game["last_snapshot"]
+
+    if last_snapshot is None:
+        return redirect(url_for("index"))
+
+    save_game(
+        game["id"],
+        last_snapshot,
+        None
+    )
 
     return redirect(url_for("index"))
 
 
 @app.route("/end_game", methods=["POST"])
 def end_game():
-    global game_started, winner_message
-
     if not session.get("logged_in"):
         return redirect(url_for("login"))
 
-    game_started = False
-    winner_message = ""
-    game_history.clear()
+    game = get_current_game()
+    state = game["state"]
+
+    player_names = []
+
+    for player in state["players"]:
+        player_names.append(player["name"])
+
+    delete_game(game["id"])
+
+    new_game_id = create_game()
+    session["game_id"] = new_game_id
+
+    new_state = create_initial_state(player_names)
+
+    save_game(
+        new_game_id,
+        new_state,
+        None
+    )
 
     return redirect(url_for("index"))
 
 
 @app.route("/logout")
 def logout():
+    game_id = session.get("game_id")
+
+    if game_id:
+        delete_game(game_id)
+
     session.clear()
+
     return redirect(url_for("login"))
 
 
