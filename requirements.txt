@@ -1,4 +1,4 @@
 Flask
 python-dotenv
 gunicorn
-psycopg[binary]
+psycopg[binary,pool]

@@ -1,8 +1,8 @@
 import os
 import uuid
 
-import psycopg
 from dotenv import load_dotenv
+from psycopg_pool import ConnectionPool
 from psycopg.types.json import Jsonb
 
 
@@ -14,12 +14,22 @@ if not DATABASE_URL:
     raise RuntimeError("DATABASE_URLが設定されていません。")
 
 
+pool = ConnectionPool(
+    conninfo=DATABASE_URL,
+    min_size=1,
+    max_size=2,
+    timeout=10,
+    kwargs={
+        "sslmode": "require",
+        "connect_timeout": 10
+    },
+    open=True,
+    name="molkky-db-pool"
+)
+
+
 def get_connection():
-    return psycopg.connect(
-        DATABASE_URL,
-        sslmode="require",
-        connect_timeout=10
-    )
+    return pool.connection()
 
 
 def create_game():
@@ -109,7 +119,9 @@ def save_game(game_id, state, last_snapshot):
             )
 
             if cursor.rowcount == 0:
-                raise LookupError("保存対象のゲームが見つかりません。")
+                raise LookupError(
+                    "保存対象のゲームが見つかりません。"
+                )
 
 
 def delete_game(game_id):
