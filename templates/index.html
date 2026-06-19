@@ -17,238 +17,291 @@
                 {% for message in messages %}
                     <div class="notice-message">
                         {{ message }}
-                    </div>  
-                {% endfor %}    
+                    </div>
+                {% endfor %}
             {% endif %}
         {% endwith %}
 
-
-        {% if winner_message %}
-            <div class="message">
-                <div class="message-title">試合終了</div>
-                <div>{{ winner_message }}</div>
-            </div>
-        {% endif %}
-
-        {% if not game_started %}
-            <section class="card">
-                <h2>プレイヤー登録</h2>
-
-                <p class="info-text">
-                    試合開始時に投擲順はランダムで決まります。
-                </p>
-
-                <form action="{{ url_for('add_player') }}" method="POST">
-                    <label>プレイヤー名</label>
-                    <input type="text" name="player_name" placeholder="例：やまだ">
-                    <button class="primary-button" type="submit">追加</button>
-                </form>
-            </section>
-        {% endif %}
-
-        <section>
-            {% if not game_started %}
-                <h2>プレイヤー一覧</h2>
-            {% else %}
-                <h2>スコア一覧</h2>
+        <div id="app-content">
+            {% if winner_message %}
+                <div class="message">
+                    <div class="message-title">試合終了</div>
+                    <div>{{ winner_message }}</div>
+                </div>
             {% endif %}
 
-            {% if players %}
+            {% if not game_started %}
+                <section class="card">
+                    <h2>プレイヤー登録</h2>
+
+                    <p class="info-text">
+                        試合開始時に投擲順はランダムで決まります。
+                    </p>
+
+                    <form action="{{ url_for('add_player') }}" method="POST">
+                        <label>プレイヤー名</label>
+                        <input type="text" name="player_name" placeholder="例：やまだ">
+                        <button class="primary-button" type="submit">追加</button>
+                    </form>
+                </section>
+            {% endif %}
+
+            <section>
                 {% if not game_started %}
-                    {% for player in players %}
-                        <div class="card pre-game-player-card">
-                            <div class="pre-game-player-name">
-                                {{ player.name }}
-                            </div>
-
-                            <form class="delete-player-form" action="{{ url_for('delete_player', player_index=loop.index0) }}" method="POST" onsubmit="return confirm('このプレイヤーを削除しますか？');">
-                                <button class="delete-player-button" type="submit">削除</button>
-                            </form>
-                        </div>
-                    {% endfor %}
+                    <h2>プレイヤー一覧</h2>
                 {% else %}
-                    <div class="game-score-grid">
-                        {% for player in players %}
-                            <div class="game-score-card
-                                {% if current_player_index == loop.index0 and not winner_message %}
-                                    active-game-card
-                                {% endif %}
-                                {% if player.is_lost %}
-                                    lost-card
-                                {% endif %}
-                            ">
-                                {% if current_player_index == loop.index0 and not winner_message %}
-                                    <div class="mini-current-badge">現在</div>
-                                {% endif %}
+                    <h2>スコア一覧</h2>
+                {% endif %}
 
-                                <div class="mini-player-name">
+                {% if players %}
+                    {% if not game_started %}
+                        {% for player in players %}
+                            <div class="card pre-game-player-card">
+                                <div class="pre-game-player-name">
                                     {{ player.name }}
                                 </div>
 
-                                <div class="mini-player-score">
-                                    {{ player.score }}点
-                                </div>
-
-                                <div class="mini-player-sub">
-                                    0点：{{ player.miss_count }}回
-                                </div>
-
-                                <div class="mini-player-sub last-point">
-                                    前回：
-                                    {% if player.get("last_point") is not none %}
-                                        {{ player.last_point }}点
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </div>
-
-                                {% if player.is_lost %}
-                                    <div class="mini-lost">失格</div>
-                                {% endif %}
+                                <form class="delete-player-form" action="{{ url_for('delete_player', player_index=loop.index0) }}" method="POST" onsubmit="return confirm('このプレイヤーを削除しますか？');">
+                                    <button class="delete-player-button" type="submit">削除</button>
+                                </form>
                             </div>
                         {% endfor %}
+                    {% else %}
+                        <div class="game-score-grid">
+                            {% for player in players %}
+                                <div class="game-score-card
+                                    {% if current_player_index == loop.index0 and not winner_message %}
+                                        active-game-card
+                                    {% endif %}
+                                    {% if player.is_lost %}
+                                        lost-card
+                                    {% endif %}
+                                ">
+                                    {% if current_player_index == loop.index0 and not winner_message %}
+                                        <div class="mini-current-badge">現在</div>
+                                    {% endif %}
+
+                                    <div class="mini-player-name">
+                                        {{ player.name }}
+                                    </div>
+
+                                    <div class="mini-player-score">
+                                        {{ player.score }}点
+                                    </div>
+
+                                    <div class="mini-player-sub">
+                                        0点：{{ player.miss_count }}回
+                                    </div>
+
+                                    <div class="mini-player-sub last-point">
+                                        前回：
+                                        {% if player.get("last_point") is not none %}
+                                            {{ player.last_point }}点
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </div>
+
+                                    {% if player.is_lost %}
+                                        <div class="mini-lost">失格</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="card">
+                        まだプレイヤーは登録されていません。
                     </div>
                 {% endif %}
-            {% else %}
-                <div class="card">
-                    まだプレイヤーは登録されていません。
-                </div>
-            {% endif %}
-        </section>
-            
-        </section>
+            </section>
 
-        {% if winner_message and ranking %}
-            <section>
-                <h2>順位</h2>
+            {% if winner_message and ranking %}
+                <section>
+                    <h2>順位</h2>
 
-                {% for player in ranking %}
-                    <div class="card ranking-card">
-                        <div class="ranking-row">
-                            <div class="rank-mark">
-                                {% if loop.index == 1 %}
-                                    🏆
-                                {% elif loop.index == 2 %}
-                                    🥈
-                                {% elif loop.index == 3 %}
-                                    🥉
-                                {% else %}
-                                    {{ loop.index }}位
-                                {% endif %}
-                            </div>
-
-                            <div class="ranking-main">
-                                <div class="player-name">{{ player.name }}</div>
-                                <div class="player-sub">
-                                    {{ player.score }}点
-                                    {% if player.is_lost %}
-                                        ／ 失格
+                    {% for player in ranking %}
+                        <div class="card ranking-card">
+                            <div class="ranking-row">
+                                <div class="rank-mark">
+                                    {% if loop.index == 1 %}
+                                        🏆
+                                    {% elif loop.index == 2 %}
+                                        🥈
+                                    {% elif loop.index == 3 %}
+                                        🥉
+                                    {% else %}
+                                        {{ loop.index }}位
                                     {% endif %}
+                                </div>
+
+                                <div class="ranking-main">
+                                    <div class="player-name">{{ player.name }}</div>
+                                    <div class="player-sub">
+                                        {{ player.score }}点
+                                        {% if player.is_lost %}
+                                            ／ 失格
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
-            </section>
-        {% endif %}
-
-        {% if not game_started %}
-            <section class="action-area">
-                <form action="{{ url_for('start_game') }}" method="POST">
-                    <button class="primary-button" type="submit">試合開始</button>
-                </form>
-            </section>
-        {% endif %}
-
-        {% if game_started and current_player and not winner_message %}
-            <section class="card">
-                <h2>獲得点を選択</h2>
-
-                <form action="{{ url_for('submit_score') }}" method="POST">
-                    <button class="zero-button" type="submit" name="point" value="0">
-                        0点
-                    </button>
-                </form>
-
-                <div class="score-buttons">
-                    {% for point in range(1, 13) %}
-                        <form action="{{ url_for('submit_score') }}" method="POST">
-                            <button class="score-button" type="submit" name="point" value="{{ point }}">
-                                {{ point }}
-                            </button>
-                        </form>
                     {% endfor %}
-                </div>
-            </section>
-        {% endif %}
+                </section>
+            {% endif %}
 
-        {% if game_started and can_undo %}
-            <form action="{{ url_for('undo_score') }}" method="POST">
-                <button class="sub-button" type="submit">直前の入力を取り消す</button>
-            </form>
-        {% endif %}
-
-        {% if winner_message %}
-            <form action="{{ url_for('end_game') }}" method="POST">
-                <button class="primary-button" type="submit">試合終了</button>
-            </form>
-        {% endif %}
-
-        <section class="danger-area">
             {% if not game_started %}
-                <form action="{{ url_for('reset_players') }}" method="POST">
-                    <button class="sub-button" type="submit">プレイヤーリセット</button>
+                <section class="action-area">
+                    <form action="{{ url_for('start_game') }}" method="POST">
+                        <button class="primary-button" type="submit">試合開始</button>
+                    </form>
+                </section>
+            {% endif %}
+
+            {% if game_started and current_player and not winner_message %}
+                <section class="card">
+                    <h2>獲得点を選択</h2>
+
+                    <form class="js-async-form" action="{{ url_for('submit_score') }}" method="POST">
+                        <button class="zero-button" type="submit" name="point" value="0">
+                            0点
+                        </button>
+                    </form>
+
+                    <div class="score-buttons">
+                        {% for point in range(1, 13) %}
+                            <form class="js-async-form" action="{{ url_for('submit_score') }}" method="POST">
+                                <button class="score-button" type="submit" name="point" value="{{ point }}">
+                                    {{ point }}
+                                </button>
+                            </form>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if game_started and can_undo %}
+                <form class="js-async-form" action="{{ url_for('undo_score') }}" method="POST">
+                    <button class="sub-button" type="submit">直前の入力を取り消す</button>
                 </form>
             {% endif %}
 
-            {% if game_started and not winner_message %}
+            {% if winner_message %}
                 <form action="{{ url_for('end_game') }}" method="POST">
-                    <button class="danger-button" type="submit">試合終了</button>
+                    <button class="primary-button" type="submit">試合終了</button>
                 </form>
             {% endif %}
-        </section>
+
+            <section class="danger-area">
+                {% if not game_started %}
+                    <form action="{{ url_for('reset_players') }}" method="POST">
+                        <button class="sub-button" type="submit">プレイヤーリセット</button>
+                    </form>
+                {% endif %}
+
+                {% if game_started and not winner_message %}
+                    <form action="{{ url_for('end_game') }}" method="POST">
+                        <button class="danger-button" type="submit">試合終了</button>
+                    </form>
+                {% endif %}
+            </section>
+        </div>
 
         <div class="link-area">
             <a href="{{ url_for('logout') }}">ログアウト</a>
         </div>
     </div>
+
     <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const forms = document.querySelectorAll("form");
+        function setupAsyncForms() {
+            const appContent = document.getElementById("app-content");
 
-        forms.forEach(function (form) {
-            const scoreButtons = form.querySelectorAll(".score-button, .zero-button");
-
-            if (scoreButtons.length === 0) {
+            if (!appContent) {
                 return;
             }
 
-            let clickedButton = null;
+            const forms = appContent.querySelectorAll("form.js-async-form");
 
-            scoreButtons.forEach(function (button) {
-                button.addEventListener("click", function () {
-                    clickedButton = button;
-                });
-            });
-
-            form.addEventListener("submit", function (event) {
-                if (form.dataset.submitted === "true") {
-                    event.preventDefault();
+            forms.forEach(function (form) {
+                if (form.dataset.asyncBound === "true") {
                     return;
                 }
 
-                form.dataset.submitted = "true";
+                form.dataset.asyncBound = "true";
 
-                const submitButton = event.submitter || clickedButton;
+                let clickedButton = null;
 
-                if (submitButton) {
-                    submitButton.classList.add("is-sending");
-                    submitButton.setAttribute("aria-busy", "true");
-                }
+                const buttons = form.querySelectorAll("button");
+
+                buttons.forEach(function (button) {
+                    button.addEventListener("click", function () {
+                        clickedButton = button;
+                    });
+                });
+
+                form.addEventListener("submit", async function (event) {
+                    event.preventDefault();
+
+                    if (form.dataset.submitted === "true") {
+                        return;
+                    }
+
+                    form.dataset.submitted = "true";
+
+                    const submitButton = event.submitter || clickedButton;
+
+                    if (submitButton) {
+                        submitButton.classList.add("is-sending");
+                        submitButton.setAttribute("aria-busy", "true");
+                    }
+
+                    appContent.classList.add("is-updating");
+
+                    const formData = new FormData(form);
+
+                    if (submitButton && submitButton.name) {
+                        formData.set(submitButton.name, submitButton.value);
+                    }
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: form.method.toUpperCase(),
+                            body: formData,
+                            credentials: "same-origin",
+                            headers: {
+                                "X-Requested-With": "XMLHttpRequest"
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error("送信に失敗しました。");
+                        }
+
+                        const html = await response.text();
+                        const parser = new DOMParser();
+                        const documentAfterUpdate = parser.parseFromString(html, "text/html");
+                        const newAppContent = documentAfterUpdate.querySelector("#app-content");
+
+                        if (!newAppContent) {
+                            window.location.reload();
+                            return;
+                        }
+
+                        appContent.innerHTML = newAppContent.innerHTML;
+                        setupAsyncForms();
+
+                    } catch (error) {
+                        console.error(error);
+                        window.location.reload();
+
+                    } finally {
+                        appContent.classList.remove("is-updating");
+                    }
+                });
             });
-        });
-    });
-</script>
-</body>
+        }
 
+        document.addEventListener("DOMContentLoaded", setupAsyncForms);
+    </script>
+</body>
 </html>

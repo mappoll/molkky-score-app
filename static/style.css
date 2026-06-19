@@ -400,3 +400,32 @@ a {
 .zero-button:active {
     transform: scale(0.92);
 }
+.score-button,
+.zero-button,
+.sub-button {
+    transition:
+        transform 0.08s ease,
+        opacity 0.08s ease,
+        filter 0.08s ease;
+    touch-action: manipulation;
+}
+
+.score-button.is-sending,
+.zero-button.is-sending,
+.sub-button.is-sending {
+    transform: scale(0.92);
+    opacity: 0.75;
+    filter: brightness(0.85);
+    pointer-events: none;
+}
+
+.score-button:active,
+.zero-button:active,
+.sub-button:active {
+    transform: scale(0.92);
+}
+
+#app-content.is-updating button:not(.is-sending) {
+    opacity: 0.55;
+    pointer-events: none;
+}
