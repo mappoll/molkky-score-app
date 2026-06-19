@@ -98,6 +98,44 @@ def get_ranking(state):
             player["miss_count"]
         )
     )
+    
+def render_game_page(game):
+    state = game["state"]
+
+    players = state["players"]
+    game_started = state["game_started"]
+    winner_message = state["winner_message"]
+    current_player_index = state["current_player_index"]
+
+    current_player = None
+    ranking = []
+
+    if game_started and players and not winner_message:
+        if current_player_index >= len(players):
+            current_player_index = 0
+            state["current_player_index"] = 0
+
+            save_game(
+                game["id"],
+                state,
+                game["last_snapshot"]
+            )
+
+        current_player = players[current_player_index]
+
+    if winner_message:
+        ranking = get_ranking(state)
+
+    return render_template(
+        "index.html",
+        players=players,
+        game_started=game_started,
+        current_player=current_player,
+        current_player_index=current_player_index,
+        winner_message=winner_message,
+        ranking=ranking,
+        can_undo=game["last_snapshot"] is not None
+    )
 
 
 def update_score(player, point):
@@ -139,41 +177,8 @@ def index():
         return redirect(url_for("login"))
 
     game = get_current_game()
-    state = game["state"]
 
-    players = state["players"]
-    game_started = state["game_started"]
-    winner_message = state["winner_message"]
-    current_player_index = state["current_player_index"]
-
-    current_player = None
-    ranking = []
-
-    if game_started and players and not winner_message:
-        if current_player_index >= len(players):
-            current_player_index = 0
-            state["current_player_index"] = 0
-            save_game(
-                game["id"],
-                state,
-                game["last_snapshot"]
-            )
-
-        current_player = players[current_player_index]
-
-    if winner_message:
-        ranking = get_ranking(state)
-
-    return render_template(
-        "index.html",
-        players=players,
-        game_started=game_started,
-        current_player=current_player,
-        current_player_index=current_player_index,
-        winner_message=winner_message,
-        ranking=ranking,
-        can_undo=game["last_snapshot"] is not None
-    )
+    return render_game_page(game)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -355,8 +360,10 @@ def submit_score():
         last_snapshot
     )
 
-    return redirect(url_for("index"))
+    game["state"] = state
+    game["last_snapshot"] = last_snapshot
 
+    return render_game_page(game)
 
 @app.route("/undo_score", methods=["POST"])
 def undo_score():
@@ -375,8 +382,10 @@ def undo_score():
         None
     )
 
-    return redirect(url_for("index"))
+    game["state"] = last_snapshot
+    game["last_snapshot"] = None
 
+    return render_game_page(game)
 
 @app.route("/end_game", methods=["POST"])
 def end_game():

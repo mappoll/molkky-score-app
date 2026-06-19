@@ -212,5 +212,43 @@
             <a href="{{ url_for('logout') }}">ログアウト</a>
         </div>
     </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const forms = document.querySelectorAll("form");
+
+        forms.forEach(function (form) {
+            const scoreButtons = form.querySelectorAll(".score-button, .zero-button");
+
+            if (scoreButtons.length === 0) {
+                return;
+            }
+
+            let clickedButton = null;
+
+            scoreButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    clickedButton = button;
+                });
+            });
+
+            form.addEventListener("submit", function (event) {
+                if (form.dataset.submitted === "true") {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.dataset.submitted = "true";
+
+                const submitButton = event.submitter || clickedButton;
+
+                if (submitButton) {
+                    submitButton.classList.add("is-sending");
+                    submitButton.setAttribute("aria-busy", "true");
+                }
+            });
+        });
+    });
+</script>
 </body>
+
 </html>

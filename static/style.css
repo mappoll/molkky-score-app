@@ -378,3 +378,25 @@ a {
     font-weight: bold;
     margin-top: 4px;
 }
+
+.score-button,
+.zero-button {
+    transition:
+        transform 0.08s ease,
+        opacity 0.08s ease,
+        filter 0.08s ease;
+    touch-action: manipulation;
+}
+
+.score-button.is-sending,
+.zero-button.is-sending {
+    transform: scale(0.92);
+    opacity: 0.75;
+    filter: brightness(0.85);
+    pointer-events: none;
+}
+
+.score-button:active,
+.zero-button:active {
+    transform: scale(0.92);
+}
