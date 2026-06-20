@@ -5,7 +5,7 @@ import random
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 
-from db import create_game, delete_game, get_game, save_game
+from db import create_game, delete_game, delete_old_games, get_game, save_game
 
 
 load_dotenv()
@@ -48,6 +48,8 @@ def create_initial_state(player_names=None):
 
 
 def get_current_game():
+    delete_old_games()
+
     game_id = session.get("game_id")
 
     if game_id:
