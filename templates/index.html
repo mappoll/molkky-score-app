@@ -111,14 +111,13 @@
                                     </div>
 
                                     <div class="mini-player-sub last-point">
-                                        前回：
                                         {% if player.get("last_point") is not none %}
-                                            {{ player.last_point }}点
+                                            前回：{{ player.last_point }}点
                                         {% else %}
-                                            -
+                                            前回：-
                                         {% endif %}
                                     </div>
-
+                                    
                                     {% if player.is_lost %}
                                         <div class="mini-lost">失格</div>
                                     {% endif %}

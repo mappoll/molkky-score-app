@@ -468,3 +468,7 @@ a {
     margin-top: 12px;
     margin-bottom: 8px;
 }
+
+.last-point {
+    white-space: nowrap;
+}
