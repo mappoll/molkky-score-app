@@ -43,8 +43,22 @@ def delete_old_games():
 
             return cursor.rowcount
 
+def delete_old_games():
+    with get_connection() as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                DELETE FROM public.games
+                WHERE updated_at < now() - interval '24 hours';
+                """
+            )
+
+            return cursor.rowcount
+
 
 def create_game():
+    delete_old_games()
+
     game_id = uuid.uuid4()
 
     initial_state = {

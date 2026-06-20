@@ -13,13 +13,8 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY")
 
-APP_PASSWORD = os.environ.get("APP_PASSWORD")
-
 if not app.secret_key:
     raise RuntimeError("SECRET_KEYが設定されていません。")
-
-if not APP_PASSWORD:
-    raise RuntimeError("APP_PASSWORDが設定されていません。")
 
 
 def create_player(name):
@@ -37,7 +32,10 @@ def create_initial_state(player_names=None):
 
     if player_names:
         for name in player_names:
-            players.append(create_player(name))
+            clean_name = name.strip()
+
+            if clean_name:
+                players.append(create_player(clean_name))
 
     return {
         "players": players,
@@ -47,26 +45,30 @@ def create_initial_state(player_names=None):
     }
 
 
+def create_empty_page_game(player_names=None):
+    return {
+        "id": None,
+        "state": create_initial_state(player_names),
+        "last_snapshot": None
+    }
+
+
 def get_current_game():
     delete_old_games()
 
     game_id = session.get("game_id")
 
-    if game_id:
-        game = get_game(game_id)
-
-        if game is not None:
-            return game
-
-    game_id = create_game()
-    session["game_id"] = game_id
+    if not game_id:
+        return None
 
     game = get_game(game_id)
 
-    if game is None:
-        raise RuntimeError("作成したゲームを読み込めませんでした。")
+    if game is not None:
+        return game
 
-    return game
+    session.pop("game_id", None)
+
+    return None
 
 
 def reset_game_status(state):
@@ -100,7 +102,8 @@ def get_ranking(state):
             player["miss_count"]
         )
     )
-    
+
+
 def render_game_page(game):
     state = game["state"]
 
@@ -117,11 +120,12 @@ def render_game_page(game):
             current_player_index = 0
             state["current_player_index"] = 0
 
-            save_game(
-                game["id"],
-                state,
-                game["last_snapshot"]
-            )
+            if game["id"] is not None:
+                save_game(
+                    game["id"],
+                    state,
+                    game["last_snapshot"]
+                )
 
         current_player = players[current_player_index]
 
@@ -175,151 +179,66 @@ def move_to_next_player(state):
 
 @app.route("/")
 def index():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
     game = get_current_game()
+
+    if game is None:
+        draft_player_names = session.get("draft_player_names", [])
+        page_game = create_empty_page_game(draft_player_names)
+
+        return render_game_page(page_game)
 
     return render_game_page(game)
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    error_message = ""
-
-    if request.method == "POST":
-        password = request.form.get("password")
-
-        if password == APP_PASSWORD:
-            session["logged_in"] = True
-            return redirect(url_for("index"))
-
-        error_message = "パスワードが違います。"
-
-    return render_template(
-        "login.html",
-        error_message=error_message
-    )
-
-
-@app.route("/add_player", methods=["POST"])
-def add_player():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-    game = get_current_game()
-    state = game["state"]
-
-    if state["game_started"]:
-        return redirect(url_for("index"))
-
-    name = (request.form.get("player_name") or "").strip()
-
-    if name:
-        state["players"].append(create_player(name))
-
-        save_game(
-            game["id"],
-            state,
-            None
-        )
-
-    return redirect(url_for("index"))
-
-
-@app.route(
-    "/delete_player/<int:player_index>",
-    methods=["POST"]
-)
-def delete_player(player_index):
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-    game = get_current_game()
-    state = game["state"]
-
-    if state["game_started"]:
-        return redirect(url_for("index"))
-
-    players = state["players"]
-
-    if 0 <= player_index < len(players):
-        players.pop(player_index)
-        state["current_player_index"] = 0
-
-        save_game(
-            game["id"],
-            state,
-            None
-        )
-
-    return redirect(url_for("index"))
-
-
-@app.route("/reset_players", methods=["POST"])
-def reset_players():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-    game = get_current_game()
-    state = create_initial_state()
-
-    save_game(
-        game["id"],
-        state,
-        None
-    )
-
-    return redirect(url_for("index"))
-
-
 @app.route("/start_game", methods=["POST"])
 def start_game():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-    game = get_current_game()
-    state = game["state"]
-
-    if state["game_started"]:
-        return redirect(url_for("index"))
-
     submitted_names = request.form.getlist("player_names")
 
-    if submitted_names:
-        players = []
+    player_names = []
 
-        for name in submitted_names:
-            clean_name = name.strip()
+    for name in submitted_names:
+        clean_name = name.strip()
 
-            if clean_name:
-                players.append(create_player(clean_name))
+        if clean_name:
+            player_names.append(clean_name)
 
-        state["players"] = players
-
-    if len(state["players"]) < 2:
+    if len(player_names) < 2:
+        session["draft_player_names"] = player_names
         flash("参加者は2名以上入力してください。")
         return redirect(url_for("index"))
+
+    old_game_id = session.pop("game_id", None)
+
+    if old_game_id:
+        delete_game(old_game_id)
+
+    game_id = create_game()
+    session["game_id"] = game_id
+
+    state = create_initial_state(player_names)
 
     reset_game_status(state)
     random.shuffle(state["players"])
     state["game_started"] = True
 
     save_game(
-        game["id"],
+        game_id,
         state,
         None
     )
+
+    session.pop("draft_player_names", None)
 
     return redirect(url_for("index"))
 
 
 @app.route("/submit_score", methods=["POST"])
 def submit_score():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
     game = get_current_game()
+
+    if game is None:
+        return redirect(url_for("index"))
+
     state = game["state"]
 
     if (
@@ -383,12 +302,14 @@ def submit_score():
 
     return render_game_page(game)
 
+
 @app.route("/undo_score", methods=["POST"])
 def undo_score():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
     game = get_current_game()
+
+    if game is None:
+        return redirect(url_for("index"))
+
     last_snapshot = game["last_snapshot"]
 
     if last_snapshot is None:
@@ -405,12 +326,14 @@ def undo_score():
 
     return render_game_page(game)
 
+
 @app.route("/end_game", methods=["POST"])
 def end_game():
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
     game = get_current_game()
+
+    if game is None:
+        return redirect(url_for("index"))
+
     state = game["state"]
 
     player_names = []
@@ -420,30 +343,10 @@ def end_game():
 
     delete_game(game["id"])
 
-    new_game_id = create_game()
-    session["game_id"] = new_game_id
-
-    new_state = create_initial_state(player_names)
-
-    save_game(
-        new_game_id,
-        new_state,
-        None
-    )
+    session.pop("game_id", None)
+    session["draft_player_names"] = player_names
 
     return redirect(url_for("index"))
-
-
-@app.route("/logout")
-def logout():
-    game_id = session.get("game_id")
-
-    if game_id:
-        delete_game(game_id)
-
-    session.clear()
-
-    return redirect(url_for("login"))
 
 
 if __name__ == "__main__":
