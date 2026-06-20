@@ -429,3 +429,42 @@ a {
     opacity: 0.55;
     pointer-events: none;
 }
+
+.participant-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.participant-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.participant-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 16px;
+    border: 1px solid #d0d0d0;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+.remove-participant-button {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border: none;
+    border-radius: 10px;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.add-participant-button {
+    margin-top: 12px;
+    margin-bottom: 8px;
+}

@@ -281,8 +281,24 @@ def start_game():
     game = get_current_game()
     state = game["state"]
 
+    if state["game_started"]:
+        return redirect(url_for("index"))
+
+    submitted_names = request.form.getlist("player_names")
+
+    if submitted_names:
+        players = []
+
+        for name in submitted_names:
+            clean_name = name.strip()
+
+            if clean_name:
+                players.append(create_player(clean_name))
+
+        state["players"] = players
+
     if len(state["players"]) < 2:
-        flash("プレイヤーは2名以上登録してください。")
+        flash("参加者は2名以上入力してください。")
         return redirect(url_for("index"))
 
     reset_game_status(state)

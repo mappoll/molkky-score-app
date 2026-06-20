@@ -32,41 +32,58 @@
 
             {% if not game_started %}
                 <section class="card">
-                    <h2>プレイヤー登録</h2>
+                    <h2>参加者を入力</h2>
 
                     <p class="info-text">
-                        試合開始時に投擲順はランダムで決まります。
+                        空欄は無視されます。試合開始時に投擲順はランダムで決まります。
                     </p>
 
-                    <form action="{{ url_for('add_player') }}" method="POST">
-                        <label>プレイヤー名</label>
-                        <input type="text" name="player_name" placeholder="例：やまだ">
-                        <button class="primary-button" type="submit">追加</button>
+                    <form id="participant-form" action="{{ url_for('start_game') }}" method="POST">
+                        <div id="participant-inputs" class="participant-inputs">
+                            {% if players %}
+                                {% for player in players %}
+                                    <div class="participant-row">
+                                        <input
+                                            class="participant-input"
+                                            type="text"
+                                            name="player_names"
+                                            value="{{ player.name }}"
+                                            placeholder="プレイヤー名を入力"
+                                        >
+                                        <button class="remove-participant-button" type="button">×</button>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                {% for i in range(4) %}
+                                    <div class="participant-row">
+                                        <input
+                                            class="participant-input"
+                                            type="text"
+                                            name="player_names"
+                                            placeholder="プレイヤー名を入力"
+                                        >
+                                        <button class="remove-participant-button" type="button">×</button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <button id="add-participant-button" class="sub-button add-participant-button" type="button">
+                            ＋ 入力欄を追加
+                        </button>
+
+                        <button class="primary-button" type="submit">
+                            試合へ
+                        </button>
                     </form>
                 </section>
             {% endif %}
 
-            <section>
-                {% if not game_started %}
-                    <h2>プレイヤー一覧</h2>
-                {% else %}
+            {% if game_started %}
+                <section>
                     <h2>スコア一覧</h2>
-                {% endif %}
 
-                {% if players %}
-                    {% if not game_started %}
-                        {% for player in players %}
-                            <div class="card pre-game-player-card">
-                                <div class="pre-game-player-name">
-                                    {{ player.name }}
-                                </div>
-
-                                <form class="delete-player-form" action="{{ url_for('delete_player', player_index=loop.index0) }}" method="POST" onsubmit="return confirm('このプレイヤーを削除しますか？');">
-                                    <button class="delete-player-button" type="submit">削除</button>
-                                </form>
-                            </div>
-                        {% endfor %}
-                    {% else %}
+                    {% if players %}
                         <div class="game-score-grid">
                             {% for player in players %}
                                 <div class="game-score-card
@@ -109,12 +126,8 @@
                             {% endfor %}
                         </div>
                     {% endif %}
-                {% else %}
-                    <div class="card">
-                        まだプレイヤーは登録されていません。
-                    </div>
-                {% endif %}
-            </section>
+                </section>
+            {% endif %}
 
             {% if winner_message and ranking %}
                 <section>
@@ -147,14 +160,6 @@
                             </div>
                         </div>
                     {% endfor %}
-                </section>
-            {% endif %}
-
-            {% if not game_started %}
-                <section class="action-area">
-                    <form action="{{ url_for('start_game') }}" method="POST">
-                        <button class="primary-button" type="submit">試合開始</button>
-                    </form>
                 </section>
             {% endif %}
 
@@ -193,12 +198,6 @@
             {% endif %}
 
             <section class="danger-area">
-                {% if not game_started %}
-                    <form action="{{ url_for('reset_players') }}" method="POST">
-                        <button class="sub-button" type="submit">プレイヤーリセット</button>
-                    </form>
-                {% endif %}
-
                 {% if game_started and not winner_message %}
                     <form action="{{ url_for('end_game') }}" method="POST">
                         <button class="danger-button" type="submit">試合終了</button>
@@ -213,6 +212,92 @@
     </div>
 
     <script>
+        function setupParticipantForm() {
+            const form = document.getElementById("participant-form");
+            const inputArea = document.getElementById("participant-inputs");
+            const addButton = document.getElementById("add-participant-button");
+
+            if (!form || !inputArea || !addButton) {
+                return;
+            }
+
+            function createParticipantRow() {
+                const row = document.createElement("div");
+                row.className = "participant-row";
+
+                row.innerHTML = `
+                    <input
+                        class="participant-input"
+                        type="text"
+                        name="player_names"
+                        placeholder="プレイヤー名を入力"
+                    >
+                    <button class="remove-participant-button" type="button">×</button>
+                `;
+
+                return row;
+            }
+
+            function focusLastInput() {
+                const inputs = inputArea.querySelectorAll(".participant-input");
+                const lastInput = inputs[inputs.length - 1];
+
+                if (lastInput) {
+                    lastInput.focus();
+                }
+            }
+
+            addButton.addEventListener("click", function () {
+                inputArea.appendChild(createParticipantRow());
+                focusLastInput();
+            });
+
+            inputArea.addEventListener("click", function (event) {
+                if (!event.target.classList.contains("remove-participant-button")) {
+                    return;
+                }
+
+                const rows = inputArea.querySelectorAll(".participant-row");
+                const row = event.target.closest(".participant-row");
+
+                if (rows.length <= 1) {
+                    const input = row.querySelector(".participant-input");
+
+                    if (input) {
+                        input.value = "";
+                        input.focus();
+                    }
+
+                    return;
+                }
+
+                row.remove();
+            });
+
+            form.addEventListener("keydown", function (event) {
+                if (
+                    event.key !== "Enter"
+                    || !event.target.classList.contains("participant-input")
+                ) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const inputs = Array.from(inputArea.querySelectorAll(".participant-input"));
+                const currentIndex = inputs.indexOf(event.target);
+                const nextInput = inputs[currentIndex + 1];
+
+                if (nextInput) {
+                    nextInput.focus();
+                    return;
+                }
+
+                inputArea.appendChild(createParticipantRow());
+                focusLastInput();
+            });
+        }
+
         function setupAsyncForms() {
             const appContent = document.getElementById("app-content");
 
@@ -288,6 +373,8 @@
                         }
 
                         appContent.innerHTML = newAppContent.innerHTML;
+
+                        setupParticipantForm();
                         setupAsyncForms();
 
                     } catch (error) {
@@ -301,7 +388,10 @@
             });
         }
 
-        document.addEventListener("DOMContentLoaded", setupAsyncForms);
+        document.addEventListener("DOMContentLoaded", function () {
+            setupParticipantForm();
+            setupAsyncForms();
+        });
     </script>
 </body>
 </html>
